@@ -1,8 +1,4 @@
-# Characterizing Wartime DDoS Attacks (CyCon 2026) - tentative
-
-This repository provides the analysis scripts and reproducible figure-generation code for the paper:
-
-> J. Kim et al. (2026), *Characterizing Wartime DDoS Attacks: Insights from a 3.5-Year Honeypot Analysis*, NATO CCDCOE CyCon 2026.
+# Characterizing Wartime DDoS Attacks - tentative
 
 ## Overview
 
