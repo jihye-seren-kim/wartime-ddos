@@ -5,16 +5,18 @@
 Protocol Analyzer with COUNT and PPS — with a single combined table
 covering ALL, RU-all, UA-all and six scopes (RU/UA × agnostic/proxied/emulated).
 
-Outputs:
+Adds outputs:
 - overall_percentages_all_ru_ua_and_six_cnt_pps.csv
 - table_overall_percentages_all_ru_ua_and_six_cnt_pps.tex
   (Columns: ALL(C,P), RU-all(C,P), UA-all(C,P),
             RU-agn.(C,P), RU-prox.(C,P), RU-emul.(C,P),
             UA-agn.(C,P), UA-prox.(C,P), UA-emul.(C,P))
-- Six-scope table (cnt|pps):
+
+Also keeps:
+- Six-scope table (Cnt|PPS):
   * overall_percentages_six_scopes_cnt_pps.csv
   * table_overall_percentages_six_scopes_cnt_pps.tex
-- Panels (cnt / pps):
+- Panels (Count / PPS):
   * panel_top10_monthly_share_by_honeypot_2x3_count.(png|pdf)
   * panel_top10_monthly_share_by_honeypot_2x3_pps.(png|pdf)
   * overall_russia_monthly_share_count.pdf / overall_russia_monthly_share_pps.pdf
@@ -123,11 +125,12 @@ PROTOCOL_COLORS = {
     "CLDAP": (0.1020, 0.6000, 0.2000),                # clrCLDAP - strong green
     "SNMP": (0.5569, 0.8667, 0.4235),                 # clrSNMP - soft lime green
     "Chargen": (0.8431, 0.1882, 0.1216),              # clrChargen - red
-    "Apple Remote Desktop": (0.7019, 0.7019, 0.7019), # clrAppleRemoteDesktop - gray
+    "ARD": (0.7019, 0.7019, 0.7019),                  # clrAppleRemoteDesktop - gray
     "CoAP": (0.5804, 0.4039, 0.7412),                 # clrCoAP - purple
-    "Others": (0.75, 0.70, 0.88),                      # clrOthers - light lavender
+    "Others": (0.75, 0.70, 0.88),                     # clrOthers - light lavender
 }
 
+# protocol labelling
 def map_port_to_proto(dport_val) -> str:
     try:
         port = int(str(dport_val).strip())
@@ -135,12 +138,13 @@ def map_port_to_proto(dport_val) -> str:
         return "Unknown"
     return PORT_TO_PROTO.get(port, f"port{port}")
 
+# protocol labelling (classified to Others)
 def canonical_protocol(label: str) -> str:
     if label in IMPORTANT_PROTOCOLS:
         return label
     return "Others"
 
-# Time helpers
+# time helpers (UTC)
 def to_utc(x) -> pd.Timestamp:
     t = pd.Timestamp(x)
     if t.tz is None:
@@ -161,7 +165,7 @@ def iter_week_starts(a_start: pd.Timestamp, a_end: pd.Timestamp):
         yield cur
         cur += pd.Timedelta(days=7)
 
-# IO 
+# enumerate all files for the input
 def enumerate_all_files():
     files = []
     for y in YEARS:
@@ -171,6 +175,7 @@ def enumerate_all_files():
                 files.append(f)
     return files
 
+# check the necessary columns
 def ensure_columns(first_file):
     head = pd.read_csv(first_file, nrows=1)
     need = [DPORT_COL, CONS_COL, COUNTRY_COL, START_COL, END_COL, PKT_COL]
@@ -179,7 +184,7 @@ def ensure_columns(first_file):
         raise RuntimeError(f"Missing columns {missing}. Columns: {list(head.columns)}")
     return True
 
-# Plot helpers 
+# plot helpers 
 def stacked_area_monthly(df_month_proto, title, pdf_path, color_map_global):
     if df_month_proto.empty:
         return
@@ -205,7 +210,7 @@ def stacked_area_monthly(df_month_proto, title, pdf_path, color_map_global):
     fig.savefig(pdf_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
 
-# Global color map 
+# global color map 
 def build_global_color_map(all_labels):
     color_map = {}
     for name in DISPLAY_ORDER:
@@ -228,6 +233,7 @@ def collapse_to_important(df: pd.DataFrame) -> pd.DataFrame:
     out = out[[c for c in DISPLAY_ORDER if c in out.columns]]
     return out
 
+# bucket for {counts/packets/dur}[proto][week]
 def mk_scope_bucket():
     return {
         "counts": defaultdict(lambda: defaultdict(int)),
@@ -235,6 +241,7 @@ def mk_scope_bucket():
         "dur": defaultdict(lambda: defaultdict(float)),
     }
 
+# each scope bucket is transformed into a 'week * protocol' data frame
 def dict_to_week_df(proto_map, dtype=float):
     if not proto_map:
         return pd.DataFrame()
@@ -249,7 +256,7 @@ def dict_to_week_df(proto_map, dtype=float):
             df.at[wk, proto_lbl] = df.at[wk, proto_lbl] + dtype(val)
     return df
 
-# Process (count + pps) 
+# process: count + pps
 def process_scope_dual(df_week_cnt: pd.DataFrame,
                        df_week_pkt: pd.DataFrame,
                        df_week_dur: pd.DataFrame,
@@ -263,11 +270,11 @@ def process_scope_dual(df_week_cnt: pd.DataFrame,
         print(f"[{scope_name}] No data.")
         return None, None
 
-    # COUNT
+    # count
     m_cnt_raw = (df_week_cnt.resample("MS").sum() if df_week_cnt is not None else pd.DataFrame())
     m_cnt = collapse_to_important(m_cnt_raw) if not m_cnt_raw.empty else pd.DataFrame()
 
-    # PPS
+    # pps
     if df_week_pkt is not None and df_week_dur is not None and not df_week_pkt.empty and not df_week_dur.empty:
         m_pkt_raw = df_week_pkt.resample("MS").sum()
         m_dur_raw = df_week_dur.resample("MS").sum()
@@ -276,7 +283,7 @@ def process_scope_dual(df_week_cnt: pd.DataFrame,
     else:
         m_pps = pd.DataFrame()
 
-    # Monthly stacks 
+    # monthly stacks (visuals)
     if not m_cnt.empty:
         stacked_area_monthly(
             m_cnt,
@@ -284,7 +291,7 @@ def process_scope_dual(df_week_cnt: pd.DataFrame,
             pdf_path=str(outdir / f"monthly_share_protocol_{scope_name}_count.pdf"),
             color_map_global=color_map_global
         )
-        # Overall RU/UA alias files (Count)
+        # overall RU/UA alias files (Count)
         if scope_name in ("RU", "UA"):
             tag = "overall_russia" if scope_name == "RU" else "overall_ukraine"
             stacked_area_monthly(
@@ -306,7 +313,7 @@ def process_scope_dual(df_week_cnt: pd.DataFrame,
             pdf_path=str(outdir / f"monthly_share_protocol_{scope_name}_pps.pdf"),
             color_map_global=color_map_global
         )
-        # Overall RU/UA alias files (PPS)
+        # overall RU/UA alias files (pps)
         if scope_name in ("RU", "UA"):
             tag = "overall_russia" if scope_name == "RU" else "overall_ukraine"
             stacked_area_monthly(
@@ -316,7 +323,7 @@ def process_scope_dual(df_week_cnt: pd.DataFrame,
                 color_map_global=color_map_global
             )
 
-    # Overall %
+    # overall %
     ser_cnt = None
     ser_pps = None
 
@@ -338,7 +345,7 @@ def process_scope_dual(df_week_cnt: pd.DataFrame,
 
     return ser_cnt, ser_pps
 
-# 2×3 Panel (COUNT / PPS) 
+# 2×3 panel (count / pps) 
 def panel_top10_monthly_share_by_honeypot_2x3(c_scopes: dict, outdir: Path, color_map_global, mode: str):
     rows = ["agnostic", "proxied", "emulated"]
     cols = ["RU", "UA"]
@@ -467,7 +474,7 @@ def write_six_scopes_cnt_pps(cnt_map: dict, pps_map: dict, outdir: Path):
     (outdir / "table_overall_percentages_six_scopes_cnt_pps.tex").write_text(tex, encoding="utf-8")
     print("[COMBINED-6] Wrote overall_percentages_six_scopes_cnt_pps.csv and table_overall_percentages_six_scopes_cnt_pps.tex")
 
-# Combined table writer 
+# combined table writer including ALL/RU-all/UA-all
 def write_all_ru_ua_and_six_cnt_pps(cnt_map: dict, pps_map: dict, outdir: Path):
     """
     Build ONE big table with columns:
@@ -487,14 +494,14 @@ def write_all_ru_ua_and_six_cnt_pps(cnt_map: dict, pps_map: dict, outdir: Path):
         ("UA-emulated", "UA-emul."),
     ]
 
-    # Build DataFrames for Count/PPS
+    # build DataFrames for count/pps
     def get_series(d, key):
         return d.get(key, pd.Series(0.0, index=DISPLAY_ORDER)).reindex(DISPLAY_ORDER).fillna(0.0)
 
     df_cnt = pd.concat({alias: get_series(cnt_map, key) for key, alias in cols_all}, axis=1)
     df_pps = pd.concat({alias: get_series(pps_map, key) for key, alias in cols_all}, axis=1)
 
-    # Save CSV (multi-index columns: ('Cnt', alias) / ('PPS', alias))
+    # save CSV (multi-index columns: ('Cnt', alias) / ('PPS', alias))
     wide = pd.concat({"Cnt": df_cnt, "PPS": df_pps}, axis=1)
     wide.to_csv(outdir / "overall_percentages_all_ru_ua_and_six_cnt_pps.csv", float_format="%.1f")
 
@@ -505,7 +512,7 @@ def write_all_ru_ua_and_six_cnt_pps(cnt_map: dict, pps_map: dict, outdir: Path):
         "ARD": "clrARD", "CoAP": "clrCoAP", "Others": "clrOthers",
     }
 
-    human_headers = [alias for _, alias in cols_all] 
+    human_headers = [alias for _, alias in cols_all]  # shown in table
     header_line1 = " & " + " & ".join([f"\\multicolumn{{2}}{{c}}{{{h}}}" for h in human_headers]) + r" \\"
     header_line2 = "Protocol & " + " & ".join(["Count & pps"]*len(human_headers)) + r" \\"
 
@@ -538,7 +545,7 @@ def write_all_ru_ua_and_six_cnt_pps(cnt_map: dict, pps_map: dict, outdir: Path):
     (outdir / "table_overall_percentages_all_ru_ua_and_six_cnt_pps.tex").write_text(tex, encoding="utf-8")
     print("[COMBINED-ALL+6] Wrote overall_percentages_all_ru_ua_and_six_cnt_pps.csv and table_overall_percentages_all_ru_ua_and_six_cnt_pps.tex")
 
-# Main flow 
+# main flow 
 def process_all():
     files = enumerate_all_files()
     if not files:
@@ -548,11 +555,12 @@ def process_all():
     # Base scopes
     base_scopes = { "ALL": mk_scope_bucket(), "RU": mk_scope_bucket(), "UA": mk_scope_bucket() }
 
-    # Honeypot-type scopes for ALL/RU/UA
+    # honeypot type scopes for ALL/RU/UA
     contype_values = ["agnostic", "proxied", "emulated"]
     c_scopes = { ct: { "ALL": mk_scope_bucket(), "RU": mk_scope_bucket(), "UA": mk_scope_bucket() }
                  for ct in contype_values }
 
+    # dataset loading
     for fpath in tqdm(files, desc="Files", unit="file"):
         for chunk in pd.read_csv(
             fpath, usecols=USECOLS_BASE, dtype=DTYPE_MAP,
@@ -573,6 +581,7 @@ def process_all():
                 continue
 
             s = s[mask]; e = e[mask]; cc = cc[mask]; dp = dp[mask]; ht = ht[mask]; pkt = pkt[mask].fillna(0)
+            # protocol labelling
             proto = dp.map(map_port_to_proto).map(canonical_protocol)
 
             for s_i, e_i, ccode, proto_lbl, honeypot_type, K_i in zip(s.values, e.values, cc.values, proto.values, ht.values, pkt.values):
@@ -586,9 +595,9 @@ def process_all():
                     frac = overlap / D_i
 
                     for key in ["ALL", ccode]:
-                        base_scopes[key]["counts"][proto_lbl][ws]  += 1
-                        base_scopes[key]["packets"][proto_lbl][ws] += float(K_i) * frac
-                        base_scopes[key]["dur"][proto_lbl][ws]     += overlap
+                        base_scopes[key]["counts"][proto_lbl][ws]  += 1 # count +1 to certain week
+                        base_scopes[key]["packets"][proto_lbl][ws] += float(K_i) * frac # distribute the number of packets to each week
+                        base_scopes[key]["dur"][proto_lbl][ws]     += overlap # all duration
 
                     if honeypot_type in c_scopes:
                         for key in ["ALL", ccode]:
@@ -596,10 +605,10 @@ def process_all():
                             c_scopes[honeypot_type][key]["packets"][proto_lbl][ws] += float(K_i) * frac
                             c_scopes[honeypot_type][key]["dur"][proto_lbl][ws]     += overlap
 
-    # Colors
+    # colors
     color_map_global = build_global_color_map(set(IMPORTANT_PROTOCOLS + ["Others"]))
 
-    # Process scopes -> overall series maps
+    # process scopes: overall series maps
     percent_cnt_map, percent_pps_map = {}, {}
 
     for scope_name, bucket in base_scopes.items():
@@ -625,16 +634,16 @@ def process_all():
                 if ser_cnt is not None: percent_cnt_map[key] = ser_cnt
                 if ser_pps is not None: percent_pps_map[key] = ser_pps
 
-    # Panels
+    # panels
     panel_top10_monthly_share_by_honeypot_2x3(c_scopes, OUTDIR, color_map_global, mode="count")
     panel_top10_monthly_share_by_honeypot_2x3(c_scopes, OUTDIR, color_map_global, mode="pps")
 
-    # six-scope table
+    # existing six-scope table
     write_six_scopes_cnt_pps(percent_cnt_map, percent_pps_map, OUTDIR)
 
     write_all_ru_ua_and_six_cnt_pps(percent_cnt_map, percent_pps_map, OUTDIR)
 
-# Entrypoint
+# entrypoint
 def main():
     process_all()
 
