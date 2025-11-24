@@ -1,8 +1,7 @@
 # Protocol Analyzer (*`protocol-analyzer.py`* — count & pps)
 
 Analyzes amplification-attack sessions by protocol across Russia/Ukraine (RU/UA) using both count and pps shares.
-The script builds monthly stacks and two combined tables covering
-ALL, RU-all, UA-all, and six honeypot scopes (RU/UA × agnostic / proxied / emulated).
+The script builds monthly stacks and two combined tables covering ALL, RU-all, UA-all, and six honeypot scopes (RU/UA × agnostic / proxied / emulated).
 
 ---
 
@@ -39,16 +38,14 @@ ALL, RU-all, UA-all, and six honeypot scopes (RU/UA × agnostic / proxied / emul
 
 ### PPS
 
-[
-PPS = \frac{\sum packets}{\sum duration_\text{(seconds)}} \text{ per month and protocol}
-]
+$\displaystyle \text{PPS} = \frac{\sum \text{packets}}{\sum \text{duration (seconds)}}$  &nbsp; (per month and protocol)
 
 ### Scopes
 
-| Type                       | Description                                                                         | Examples                                                                               |
-| ---------------------------| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Base scopes                | Overall country-level data buckets                                                  | `ALL`, `RU`, `UA`                                                                      |
-| Honeypot scopes (c-scopes) | For each honeypot type (agnostic / proxied / emulated), data grouped by ALL, RU, UA | `RU-agnostic`, `RU-proxied`, `RU-emulated`, `UA-agnostic`, `UA-proxied`, `UA-emulated` |
+| Type                       | Description                                         | Examples                                                                               |
+| ---------------------------| --------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Base scopes                | Overall country-level data buckets                  | `ALL`, `RU`, `UA`                                                                      |
+| Honeypot scopes (c-scopes) | For each honeypot type, data grouped by ALL, RU, UA | `RU-agnostic`, `RU-proxied`, `RU-emulated`, `UA-agnostic`, `UA-proxied`, `UA-emulated` |
 
 ---
 
@@ -78,7 +75,7 @@ All files are saved under `OUTDIR` (default: `out_protocol`).
 
 * `monthly_share_protocol_<SCOPE>_count.pdf`
 * `monthly_share_protocol_<SCOPE>_pps.pdf`
-   * (For RU/UA: alias → `overall_russia_*`, `overall_ukraine_*`)
+   * For RU/UA: alias → `overall_russia_*`, `overall_ukraine_*`
 
 * 2×3 Honeypot Panels
   * `panel_top10_monthly_share_by_honeypot_2x3_count.(png|pdf)`
@@ -90,22 +87,19 @@ All files are saved under `OUTDIR` (default: `out_protocol`).
 
 * `overall_percentages_six_scopes_cnt_pps.csv`
 * `table_overall_percentages_six_scopes_cnt_pps.tex`
-
   * Columns: RU-agn.(C,P), RU-prox.(C,P), RU-emul.(C,P), UA-agn.(C,P), UA-prox.(C,P), UA-emul.(C,P)
 
 #### ALL + RU-all + UA-all + Six Scopes
 
 * `overall_percentages_all_ru_ua_and_six_cnt_pps.csv`
 * `table_overall_percentages_all_ru_ua_and_six_cnt_pps.tex`
-
   * Columns: ALL(C,P), RU-all(C,P), UA-all(C,P), plus the six above
 
 ### Totals 
 
 * `monthly_totals_<SCOPE>.csv` — monthly session totals (COUNT baseline)
 * `weekly_totals_<SCOPE>.csv` — weekly session totals
-
-> `PPS` shows normalized packet rate per month & protocol; `COUNT` shows weekly presence of sessions → long sessions influence multiple weeks.
+  * `PPS` shows normalized packet rate per month & protocol; `COUNT` shows weekly presence of sessions → long sessions influence multiple weeks.
 
 ---
 
