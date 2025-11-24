@@ -53,8 +53,11 @@ export GEOIP_CONTYPE=GeoIP2-Connection-Type.mmdb
 python3 maxmind_enrichment.py
 ```
 
-> Restrict output to certain countries:
-> `COUNTRY_FILTER="RU,UA" python3 maxmind_enrichment.py`
+* Restrict output to certain countries:
+
+```bash
+COUNTRY_FILTER="RU,UA" python3 maxmind_enrichment.py
+```
 
 ### Processing Steps
 
