@@ -11,15 +11,16 @@ Due to data-sensitivity and volume, only anonymized sample CSVs are included. Fu
 wartime-ddos-analysis/
 │
 ├── code/
-│   ├── 00_/            # shared helpers (time handling, map_port_to_proto, etc.)
-│   ├── 01_/        # raw → enriched CSV transformation (GeoIP, ASN, RDAP)
-│   ├── 02_/   # weekly aggregation + event correlation
-│   ├── 03_/    # protocol share (Count, PPS)
-│   ├── 04_/   # AS-type, sectoral and connection-type trends
-│   ├── 05_/        # stacked plots, heatmaps, ECDFs, violin plots
-│   ├── .py  # unified entry for protocol-related figures
-│   ├── .sh               # reproduce all figures/tables
-│   └── README_CODE.md           # per-module usage
+│   ├── enrichment/                  # small anonymized demo subset
+│   │   ├── README-data.md
+│   │   └── maxmind_enrichment.py
+│   │   └── rdap_enrichment.py
+│   └── evaluation/
+│   │   ├── README-eval.md
+│   │   └── country-analyzer.py
+│   │   ├── domain-analyzer.py
+│   │   └── protocol-analyzer.py
+│   └── README.md           
 │
 ├── data/
 │   ├── sample/                  # small anonymized demo subset
@@ -31,7 +32,6 @@ wartime-ddos-analysis/
 │   ├── cycon2026_draft.pdf
 │   └── figures/                 # generated figures for submission
 │
-├── environment.yml              # conda environment (recommended)
 ├── requirements.txt
 ├── LICENSE
 └── CITATION.cff
