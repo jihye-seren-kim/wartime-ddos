@@ -11,7 +11,7 @@ Due to data-sensitivity and volume, only anonymized sample CSVs are included. Fu
 wartime-ddos-analysis/
 │
 ├── code/
-│   ├── enrichment/                  # small anonymized demo subset
+│   ├── enrichment/                  
 │   │   ├── README-data.md
 │   │   └── maxmind_enrichment.py
 │   │   └── rdap_enrichment.py
